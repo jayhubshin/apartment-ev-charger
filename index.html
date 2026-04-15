@@ -474,44 +474,59 @@ function parseXMLResponse(xmlText, sourceName) {
 // ============================================================
 // API 호출 함수들
 // ============================================================
-async function fetchApartments(keyword, key) {
-    // URL 인코딩 처리 (이중 인코딩 방지)
-    const safeKey = key.includes('%') ? decodeURIComponent(key) : key;
-    
-    const params = new URLSearchParams({
-        serviceKey: safeKey,
-        kaptName: keyword,
-        pageNo: 1,
-        numOfRows: 30,
-        _type: 'json'  // JSON 요청하지만 XML도 처리 가능
-    });
+// ============================================================
+// 기존 fetchApartments와 fetchChargers 함수를 모두 삭제하고
+// 아래 코드로 완전히 교체
+// ============================================================
 
-    const apiUrl = `https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAptBasisInfo?${params}`;
-    addDebug(`국토부 V4 API 호출: "${keyword}"`, 'info');
+async function fetchApartments(keyword) {
+    const serviceKey = localStorage.getItem('apt_molit_key');
+    const keyType = localStorage.getItem('apt_molit_keytype') || 'auto';
     
-    return await fetchPublicDataAPI(apiUrl, '국토부 V4');
-}
-
-async function fetchChargers(aptName, key) {
-    const safeKey = key.includes('%') ? decodeURIComponent(key) : key;
+    if (!serviceKey) {
+        throw new Error('국토부 API 키가 설정되지 않았습니다');
+    }
     
-    const params = new URLSearchParams({
-        serviceKey: safeKey,
-        statNm: aptName,
-        pageNo: 1,
-        numOfRows: 100,
-        dataType: 'JSON'  // 환경부는 dataType 사용
-    });
-
-    const apiUrl = `https://apis.data.go.kr/B552584/EvCharger/getChargerInfo?${params}`;
+    const safeKey = getSafeEncodedKey(serviceKey, keyType);
+    const safeKeyword = encodeURIComponent(keyword);
+    
+    // 직접 URL 조합 (URLSearchParams로 serviceKey 처리 금지)
+    const apiUrl = `https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAptBasisInfo?serviceKey=${safeKey}&kaptName=${safeKeyword}&pageNo=1&numOfRows=30&_type=json`;
+    
+    addDebug(`국토부 V4 호출 (키타입: ${keyType})`, 'info');
     
     try {
-        return await fetchPublicDataAPI(apiUrl, '환경부');
+        const text = await fetchViaProxy(apiUrl, '국토부 V4');
+        return parseApiResponse(text, '국토부 V4');
+    } catch (error) {
+        // 인증 오류 시 키 타입 변경 제안
+        if (error.message.includes('SERVICE_KEY') || error.message.includes('AUTH')) {
+            throw new Error(`${error.message}\n💡 해결책: API 키 타입(Encoding/Decoding)을 바꿔보세요`);
+        }
+        throw error;
+    }
+}
+
+async function fetchChargers(aptName) {
+    const serviceKey = localStorage.getItem('apt_env_key');
+    const keyType = localStorage.getItem('apt_env_keytype') || 'auto';
+    
+    if (!serviceKey) return [];
+    
+    const safeKey = getSafeEncodedKey(serviceKey, keyType);
+    const safeAptName = encodeURIComponent(aptName);
+    
+    const apiUrl = `https://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey=${safeKey}&statNm=${safeAptName}&pageNo=1&numOfRows=100&dataType=JSON`;
+    
+    try {
+        const text = await fetchViaProxy(apiUrl, '환경부');
+        return parseApiResponse(text, '환경부');
     } catch (error) {
         addDebug(`충전기 조회 실패 (${aptName}): ${error.message}`, 'warn');
         return [];
     }
 }
+
 
 // ============================================================
 // 위치 정보 파싱
