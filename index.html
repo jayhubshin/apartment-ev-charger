@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔌 아파트 전기차 충전기 현황 (V4 완전판)</title>
+<title>🔌 아파트 전기차 충전기 현황</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -35,49 +35,63 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
 }
 .btn:hover { transform: translateY(-1px); opacity: 0.9; }
 .btn-search { background: #f59e0b; color: white; }
-.btn-demo { background: #059669; color: white; }
+.btn-demo   { background: #059669; color: white; }
 
-/* API 설정 */
+/* API 설정 박스 */
 .api-box {
     background: #fff7ed; border: 2px solid #fed7aa; border-radius: 12px;
     padding: 20px; margin: 16px auto; max-width: 1200px;
 }
-.api-title { font-weight: 700; color: #c2410c; margin-bottom: 14px; }
+.api-title { font-weight: 700; color: #c2410c; margin-bottom: 6px; font-size: 1rem; }
+.api-desc { font-size: 0.82rem; color: #6b7280; margin-bottom: 14px; line-height: 1.5; }
 .api-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
-@media (max-width: 600px) { .api-fields { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .api-fields { grid-template-columns: 1fr; } }
 .api-field label {
-    display: block; font-size: 0.85rem; font-weight: 700;
-    color: #374151; margin-bottom: 6px;
+    display: block; font-size: 0.85rem; font-weight: 700; color: #374151; margin-bottom: 6px;
 }
 .api-field input {
     width: 100%; padding: 10px 14px; border: 1.5px solid #d1d5db;
-    border-radius: 8px; font-size: 0.85rem; transition: border-color 0.2s;
+    border-radius: 8px; font-size: 0.82rem; font-family: monospace; transition: border-color 0.2s;
 }
-.api-field input.ok { border-color: #16a34a; background: #f0fdf4; }
+.api-field input:focus { outline: none; border-color: #6366f1; }
+.api-field input.ok  { border-color: #16a34a; background: #f0fdf4; }
 .api-field input.err { border-color: #dc2626; background: #fef2f2; }
+
+/* 키 타입 표시 */
+.key-type-row { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+.key-type-badge {
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 10px;
+    font-weight: 600; cursor: pointer; border: 1.5px solid transparent;
+}
+.key-type-badge.active { border-color: #4f46e5; background: #e0e7ff; color: #3730a3; }
+.key-type-badge.inactive { border-color: #d1d5db; background: white; color: #6b7280; }
+
+.api-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .btn-save {
     padding: 10px 22px; background: #4f46e5; color: white;
-    border: none; border-radius: 8px; font-size: 0.9rem;
-    font-weight: 600; cursor: pointer; margin-right: 10px;
+    border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
 }
+.btn-save:hover { background: #4338ca; }
 .api-status { font-size: 0.85rem; padding: 6px 14px; border-radius: 20px; font-weight: 600; }
-.api-status.ok { background: #dcfce7; color: #15803d; }
+.api-status.ok   { background: #dcfce7; color: #15803d; }
 .api-status.warn { background: #fef9c3; color: #854d0e; }
+.api-status.err  { background: #fee2e2; color: #b91c1c; }
 
 /* 디버그 패널 */
 .debug-box {
     background: #0f172a; color: #94a3b8; border-radius: 10px;
     padding: 12px 16px; margin: 0 auto 16px; max-width: 1200px;
     font-family: 'Consolas', monospace; font-size: 0.8rem;
-    max-height: 180px; overflow-y: auto; display: none;
+    max-height: 200px; overflow-y: auto; display: none;
 }
 .debug-box.show { display: block; }
-.d-ok { color: #4ade80; }
-.d-err { color: #f87171; }
+.d-ok   { color: #4ade80; }
+.d-err  { color: #f87171; }
 .d-warn { color: #fbbf24; }
 .d-info { color: #60a5fa; }
+.d-raw  { color: #c084fc; word-break: break-all; }
 
-/* 메인 */
+/* 메인 레이아웃 */
 .main {
     display: grid; grid-template-columns: 3fr 2fr; gap: 20px;
     padding: 0 20px 20px; max-width: 1200px; margin: 0 auto;
@@ -96,8 +110,8 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
     background: #e0e7ff; color: #3730a3; font-size: 0.8rem;
     font-weight: 700; padding: 3px 12px; border-radius: 20px;
 }
-#map { width: 100%; height: 580px; z-index: 1; }
-.list-wrap { max-height: 580px; overflow-y: auto; padding: 14px; }
+#map { width: 100%; height: 560px; z-index: 1; }
+.list-wrap { max-height: 560px; overflow-y: auto; padding: 14px; }
 
 .loading-wrap { display: none; text-align: center; padding: 40px; }
 .loading-wrap.show { display: block; }
@@ -131,15 +145,6 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
 .sv { font-size: 1rem; font-weight: 700; color: #1d4ed8; }
 .sl { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
 
-.progress-bar {
-    width: 100%; height: 6px; background: #e5e7eb;
-    border-radius: 3px; margin-top: 10px; overflow: hidden;
-}
-.progress-fill {
-    height: 100%; background: linear-gradient(90deg, #16a34a, #4ade80);
-    transition: width 0.5s ease;
-}
-
 .empty { text-align: center; padding: 50px 20px; color: #94a3b8; }
 .empty .icon { font-size: 3rem; margin-bottom: 12px; }
 
@@ -154,54 +159,51 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
 
 /* 모달 */
 .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    justify-content: center; align-items: center; padding: 20px;
 }
 .modal-overlay.show { display: flex; }
 .modal {
     background: white; border-radius: 16px; padding: 24px;
-    max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto; position: relative;
+    max-width: 800px; width: 100%; max-height: 85vh;
+    overflow-y: auto; position: relative;
 }
 .modal-close {
-    position: absolute; top: 16px; right: 16px; background: #f1f5f9;
-    border: none; border-radius: 50%; width: 32px; height: 32px;
-    cursor: pointer; font-size: 1.1rem;
+    position: absolute; top: 16px; right: 16px;
+    background: #f1f5f9; border: none; border-radius: 50%;
+    width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
 }
 .modal h2 { font-size: 1.2rem; margin-bottom: 6px; }
 .modal-addr { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
 .modal-section { margin-bottom: 20px; }
 .modal-section h3 {
-    font-size: 0.95rem; color: #374151; font-weight: 700; margin-bottom: 10px;
-    padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;
+    font-size: 0.95rem; color: #374151; font-weight: 700;
+    margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;
 }
-.info-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-.info-table th, .info-table td {
-    padding: 8px 12px; text-align: left; border-bottom: 1px solid #f1f5f9;
-}
-.info-table th { background: #f8fafc; color: #64748b; font-weight: 600; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.info-item { background: #f8fafc; border-radius: 8px; padding: 10px 14px; }
+.info-label { font-size: 0.75rem; color: #94a3b8; margin-bottom: 2px; }
+.info-value { font-size: 0.95rem; font-weight: 600; color: #1e293b; }
 .charger-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .charger-table th {
     background: #f8fafc; padding: 8px 10px; text-align: left;
     color: #64748b; font-weight: 600; border-bottom: 1px solid #e5e7eb;
 }
-.charger-table td {
-    padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #374151;
-}
+.charger-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
 .charger-table tr:hover td { background: #f8fafc; }
-.loc-badge {
-    padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;
-}
-.loc-underground { background: #e0e7ff; color: #3730a3; }
-.loc-ground { background: #dcfce7; color: #15803d; }
-.loc-unknown { background: #f1f5f9; color: #64748b; }
+.loc-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+.loc-b { background: #e0e7ff; color: #3730a3; }
+.loc-g { background: #dcfce7; color: #15803d; }
+.loc-u { background: #f1f5f9; color: #64748b; }
 </style>
 </head>
 <body>
 
 <header class="header">
-    <h1>🔌 아파트 전기차 충전기 현황 (V4)</h1>
+    <h1>🔌 아파트 전기차 충전기 현황</h1>
     <div class="search-row">
-        <input type="text" id="searchInput" placeholder="아파트 단지명 입력 (예: 래미안, 힐스테이트)">
+        <input type="text" id="searchInput" placeholder="아파트 단지명 입력 (예: 래미안, 청암)">
         <select id="regionSelect">
             <option value="">전국</option>
             <option value="11">서울</option>
@@ -211,31 +213,53 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
             <option value="28">인천</option>
         </select>
         <button class="btn btn-search" onclick="performSearch()">🔍 검색</button>
-        <button class="btn btn-demo" onclick="loadDemo()">🧪 데모</button>
+        <button class="btn btn-demo"   onclick="loadDemo()">🧪 데모</button>
     </div>
 </header>
 
 <div style="padding:16px 20px 0;">
-    <div class="api-box">
-        <div class="api-title">🔑 공공 API 키 설정 (data.go.kr → 마이페이지 → 일반 인증키 Decoding)</div>
-        <div class="api-fields">
-            <div class="api-field">
-                <label>🏛️ 국토부 공동주택 API 키 (AptBasisInfoServiceV4)</label>
-                <input type="text" id="molitKey" placeholder="일반 인증키(Decoding) 붙여넣기">
-            </div>
-            <div class="api-field">
-                <label>🌿 환경공단 전기차충전소 API 키 (EvCharger)</label>
-                <input type="text" id="envKey" placeholder="일반 인증키(Decoding) 붙여넣기">
+<div class="api-box">
+    <div class="api-title">🔑 공공 API 키 설정</div>
+    <div class="api-desc">
+        ⚠️ <strong>중요:</strong> data.go.kr → 마이페이지 → 오픈API → 개발계정 → 해당 API 클릭<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>Encoding 키</strong>(%2F, %2B 등 포함)와
+        <strong>Decoding 키</strong>(/, + 등 포함) 중 <u>실제 작동하는 키</u>를 입력하세요.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        아래에서 키 타입을 선택하면 자동으로 올바르게 처리됩니다.
+    </div>
+    <div class="api-fields">
+        <div class="api-field">
+            <label>🏛️ 국토부 공동주택 API 키 (AptBasisInfoServiceV4)</label>
+            <input type="text" id="molitKey" placeholder="인증키 붙여넣기">
+            <div class="key-type-row">
+                <span style="font-size:0.78rem;color:#6b7280;">키 타입:</span>
+                <span class="key-type-badge active" id="molitType_enc"
+                      onclick="setKeyType('molit','enc')">Encoding (%2F 포함)</span>
+                <span class="key-type-badge inactive" id="molitType_dec"
+                      onclick="setKeyType('molit','dec')">Decoding (/ + = 포함)</span>
             </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <button class="btn-save" onclick="saveApiKeys()">💾 저장</button>
-            <span class="api-status warn" id="apiStatus">⚠️ API 키 미설정</span>
-            <span style="font-size:0.8rem;color:#6b7280;">
-                💡 키 없이 테스트: <strong>🧪 데모</strong> 버튼
-            </span>
+        <div class="api-field">
+            <label>🌿 환경부 전기차충전소 API 키 (EvCharger)</label>
+            <input type="text" id="envKey" placeholder="인증키 붙여넣기">
+            <div class="key-type-row">
+                <span style="font-size:0.78rem;color:#6b7280;">키 타입:</span>
+                <span class="key-type-badge active" id="envType_enc"
+                      onclick="setKeyType('env','enc')">Encoding (%2F 포함)</span>
+                <span class="key-type-badge inactive" id="envType_dec"
+                      onclick="setKeyType('env','dec')">Decoding (/ + = 포함)</span>
+            </div>
         </div>
     </div>
+    <div class="api-actions">
+        <button class="btn-save" onclick="saveApiKeys()">💾 저장</button>
+        <span class="api-status warn" id="apiStatus">⚠️ API 키 미설정</span>
+        <span style="font-size:0.8rem;color:#6b7280;">
+            💡 키 없이 테스트: <strong>🧪 데모</strong> 버튼
+        </span>
+    </div>
+</div>
 </div>
 
 <!-- 디버그 패널 -->
@@ -256,7 +280,7 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
         </div>
         <div class="loading-wrap" id="loadingWrap">
             <div class="spinner"></div>
-            <p style="color:#64748b;">API 조회 중...</p>
+            <p style="color:#64748b; margin-top:8px;">API 조회 중...</p>
         </div>
         <div class="list-wrap" id="resultList">
             <div class="empty">
@@ -268,8 +292,8 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
 </main>
 
 <!-- 상세 모달 -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
         <button class="modal-close" onclick="closeModal()">✕</button>
         <div id="modalBody"></div>
     </div>
@@ -284,280 +308,322 @@ body { font-family: 'Malgun Gothic', sans-serif; background: #f1f5f9; color: #1e
 // 전역 변수
 // ============================================================
 let leafletMap, markers = [], currentData = [];
+let keyTypes = { molit: 'enc', env: 'enc' }; // 기본값: Encoding
+
+const CHARGER_TYPES = {
+    '01':'DC차데모', '02':'AC완속', '03':'DC차데모+AC3상',
+    '04':'DC콤보', '05':'DC차데모+DC콤보', '06':'DC차데모+AC3상+DC콤보',
+    '07':'AC3상', '08':'DC콤보(완속)', '09':'H2(수소)', '10':'NACS'
+};
 
 // ============================================================
-// 🔧 개선된 다중 프록시 통신 함수
+// 초기화
 // ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    loadSavedKeys();
+    initMap();
+    document.getElementById('searchInput')
+        .addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
+});
 
-// 응답 데이터 처리 공통 함수
-function processApiResponse(text, sourceName) {
-    const trimmed = text.trim();
+function initMap() {
+    leafletMap = L.map('map').setView([37.5665, 126.9780], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+    }).addTo(leafletMap);
+}
 
-    // 비정상 응답 감지
-    if (!trimmed || 
-        trimmed.toLowerCase().includes('unexpected') || 
-        trimmed.toLowerCase().includes('rate limit') ||
-        trimmed.toLowerCase().includes('error')) {
-        throw new Error('비정상적인 응답 데이터');
+// ============================================================
+// 키 타입 선택 UI
+// ============================================================
+function setKeyType(api, type) {
+    keyTypes[api] = type;
+    localStorage.setItem(`apt_${api}_keytype`, type);
+
+    document.getElementById(`${api}Type_enc`).className =
+        `key-type-badge ${type === 'enc' ? 'active' : 'inactive'}`;
+    document.getElementById(`${api}Type_dec`).className =
+        `key-type-badge ${type === 'dec' ? 'active' : 'inactive'}`;
+
+    addDebug(`${api} 키 타입 변경: ${type === 'enc' ? 'Encoding' : 'Decoding'}`, 'info');
+}
+
+// ============================================================
+// 🔑 핵심: API 키 처리 함수
+// ============================================================
+function prepareServiceKey(rawKey, keyType) {
+    /*
+     * 키 타입별 처리 전략:
+     *
+     * [Encoding 키] ex: 3BZk%2FkQP%2B8Hv...
+     *   → URL에 직접 문자열로 삽입 (URLSearchParams 사용 금지)
+     *   → URLSearchParams가 %를 %25로 이중 인코딩하기 때문
+     *
+     * [Decoding 키] ex: 3BZk/kQP+8Hv...
+     *   → encodeURIComponent로 인코딩 후 URL에 삽입
+     *   → / + = 등 특수문자를 올바르게 처리
+     */
+    const trimmed = rawKey.trim();
+
+    if (keyType === 'enc') {
+        // Encoding 키: 이미 인코딩된 상태 → 그대로 사용
+        // 단, 혹시 사용자가 이중 인코딩한 경우 한번 디코딩
+        if (trimmed.includes('%25')) {
+            addDebug('이중 인코딩 감지 → 한번 디코딩 처리', 'warn');
+            return decodeURIComponent(trimmed);
+        }
+        return trimmed;
+    } else {
+        // Decoding 키: 특수문자 포함 → encodeURIComponent 적용
+        return encodeURIComponent(trimmed);
+    }
+}
+
+function buildApiUrl(baseUrl, serviceKey, keyType, otherParams) {
+    /*
+     * URLSearchParams를 사용하면 serviceKey가 이중 인코딩됨
+     * → serviceKey는 직접 문자열로 URL에 삽입
+     * → 나머지 파라미터는 URLSearchParams 사용
+     */
+    const preparedKey = prepareServiceKey(serviceKey, keyType);
+    const params = new URLSearchParams(otherParams);
+    return `${baseUrl}?serviceKey=${preparedKey}&${params.toString()}`;
+}
+
+// ============================================================
+// API 키 저장/불러오기
+// ============================================================
+function isValidKey(k) {
+    if (!k || typeof k !== 'string') return false;
+    const t = k.trim();
+    return t.length > 20 && !t.includes('<') && !t.includes('DOCTYPE') && !t.startsWith('http');
+}
+
+function saveApiKeys() {
+    const mk = document.getElementById('molitKey').value.trim();
+    const ek = document.getElementById('envKey').value.trim();
+
+    if (!isValidKey(mk)) { showToast('❌ 국토부 API 키가 올바르지 않습니다'); return; }
+    if (!isValidKey(ek)) { showToast('❌ 환경부 API 키가 올바르지 않습니다'); return; }
+
+    localStorage.setItem('apt_molit_key', mk);
+    localStorage.setItem('apt_env_key', ek);
+    localStorage.setItem('apt_molit_keytype', keyTypes.molit);
+    localStorage.setItem('apt_env_keytype', keyTypes.env);
+
+    document.getElementById('molitKey').className = 'ok';
+    document.getElementById('envKey').className = 'ok';
+    document.getElementById('apiStatus').textContent = '✅ 설정 완료';
+    document.getElementById('apiStatus').className = 'api-status ok';
+
+    addDebug(`국토부 키 타입: ${keyTypes.molit}, 환경부 키 타입: ${keyTypes.env}`, 'info');
+    showToast('✅ API 키 저장 완료! 검색을 시작하세요');
+}
+
+function loadSavedKeys() {
+    const mk = localStorage.getItem('apt_molit_key') || '';
+    const ek = localStorage.getItem('apt_env_key') || '';
+    const mt = localStorage.getItem('apt_molit_keytype') || 'enc';
+    const et = localStorage.getItem('apt_env_keytype') || 'enc';
+
+    if (isValidKey(mk)) {
+        document.getElementById('molitKey').value = mk;
+        document.getElementById('molitKey').className = 'ok';
+    }
+    if (isValidKey(ek)) {
+        document.getElementById('envKey').value = ek;
+        document.getElementById('envKey').className = 'ok';
     }
 
-    // XML 응답 처리
-    if (trimmed.startsWith('<?xml') || trimmed.startsWith('<response') || trimmed.startsWith('<OpenAPI_ServiceResponse')) {
-        addDebug(`[${sourceName}] XML 응답 파싱`, 'info');
+    setKeyType('molit', mt);
+    setKeyType('env', et);
+
+    if (isValidKey(mk) && isValidKey(ek)) {
+        document.getElementById('apiStatus').textContent = '✅ 설정 완료';
+        document.getElementById('apiStatus').className = 'api-status ok';
+    }
+}
+
+// ============================================================
+// CORS 프록시 fetch (다중 프록시 + 타임아웃)
+// ============================================================
+async function fetchWithTimeout(url, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(url, { signal: controller.signal });
+        return res;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function fetchViaProxy(apiUrl, sourceName) {
+    // AllOrigins /get 방식: 응답을 JSON 래퍼로 반환 → 인코딩 문제 없음
+    const proxies = [
+        `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`,
+    ];
+
+    for (let i = 0; i < proxies.length; i++) {
+        try {
+            addDebug(`[${sourceName}] 프록시 ${i + 1} 시도`, 'info');
+            const res = await fetchWithTimeout(proxies[i], 12000);
+
+            if (!res.ok) {
+                addDebug(`HTTP ${res.status} → 다음 시도`, 'warn');
+                continue;
+            }
+
+            let text;
+
+            // AllOrigins /get 방식은 JSON 래퍼로 반환
+            if (proxies[i].includes('allorigins.win/get')) {
+                const wrapper = await res.json();
+                text = wrapper?.contents || '';
+                addDebug(`AllOrigins 래퍼 수신: ${text.substring(0, 60)}...`, 'info');
+            } else {
+                text = await res.text();
+            }
+
+            if (!text || text.trim().length < 10) {
+                addDebug('빈 응답 → 다음 시도', 'warn');
+                continue;
+            }
+
+            // 비정상 응답 감지
+            const lower = text.trim().toLowerCase();
+            if (lower.startsWith('unexpected') || lower.includes('rate limit')) {
+                addDebug(`비정상 응답: ${text.substring(0, 50)} → 다음 시도`, 'warn');
+                continue;
+            }
+
+            addDebug(`[${sourceName}] 응답 수신 성공 (${text.length}자)`, 'ok');
+            return text;
+
+        } catch (err) {
+            addDebug(`프록시 ${i + 1} 오류: ${err.message}`, 'warn');
+        }
+    }
+
+    throw new Error('모든 CORS 프록시 실패 — Cloudflare Workers 설정 필요');
+}
+
+// ============================================================
+// XML/JSON 응답 파싱
+// ============================================================
+function parseApiResponse(text, sourceName) {
+    const trimmed = text.trim();
+
+    // XML 응답
+    if (trimmed.startsWith('<?xml') || trimmed.startsWith('<response') ||
+        trimmed.startsWith('<OpenAPI') || trimmed.startsWith('<errMsg')) {
+
         const parser = new DOMParser();
         const doc = parser.parseFromString(trimmed, 'application/xml');
 
-        // XML 파싱 오류 체크
-        const parseError = doc.querySelector('parsererror');
-        if (parseError) throw new Error('XML 파싱 오류');
+        if (doc.querySelector('parsererror')) {
+            throw new Error('XML 파싱 오류');
+        }
 
-        // API 오류 코드 체크
+        // 에러 코드 체크
         const resultCode = doc.querySelector('resultCode')?.textContent?.trim();
-        const resultMsg = doc.querySelector('resultMsg')?.textContent?.trim();
-        const authMsg = doc.querySelector('returnAuthMsg')?.textContent?.trim();
-        const errMsg = doc.querySelector('errMsg')?.textContent?.trim();
+        const resultMsg  = doc.querySelector('resultMsg')?.textContent?.trim();
+        const authMsg    = doc.querySelector('returnAuthMsg')?.textContent?.trim();
+        const errMsg     = doc.querySelector('errMsg')?.textContent?.trim();
+
+        addDebug(`[${sourceName}] resultCode=${resultCode}, authMsg=${authMsg}`, 'info');
 
         if (authMsg && authMsg !== 'NORMAL SERVICE') {
-            throw new Error(`API 인증 오류: ${authMsg}`);
+            throw new Error(`API 인증 오류: ${authMsg} → Encoding/Decoding 키 타입을 바꿔보세요`);
         }
-        if (resultCode && resultCode !== '00' && resultCode !== '0000') {
-            throw new Error(`API 오류 [${resultCode}]: ${resultMsg || '알 수 없는 오류'}`);
-        }
-        if (errMsg) {
+        if (errMsg && errMsg.trim()) {
             throw new Error(`시스템 오류: ${errMsg}`);
         }
+        if (resultCode && resultCode !== '00' && resultCode !== '0000') {
+            throw new Error(`API 오류 [${resultCode}]: ${resultMsg}`);
+        }
 
-        // 정상 데이터 파싱
+        // 데이터 파싱
         const items = [];
         doc.querySelectorAll('item').forEach(item => {
             const obj = {};
-            Array.from(item.children).forEach(child => {
-                obj[child.tagName] = child.textContent.trim();
-            });
+            Array.from(item.children).forEach(c => { obj[c.tagName] = c.textContent.trim(); });
             items.push(obj);
         });
-        
-        addDebug(`[${sourceName}] XML 파싱 성공: ${items.length}건`, 'ok');
+
+        addDebug(`[${sourceName}] XML 파싱 완료: ${items.length}건`, 'ok');
         return items;
     }
 
-    // JSON 응답 처리
+    // JSON 응답
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        addDebug(`[${sourceName}] JSON 응답 파싱`, 'info');
         const json = JSON.parse(trimmed);
-        
-        // 국토부/환경부 API 구조 통합 처리
-        let items = json?.response?.body?.items?.item || json?.items?.item || [];
-        if (!items) return [];
-        
-        const result = Array.isArray(items) ? items : [items];
-        addDebug(`[${sourceName}] JSON 파싱 성공: ${result.length}건`, 'ok');
-        return result;
+        const raw  = json?.response?.body?.items?.item || json?.items?.item || [];
+        const items = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+        addDebug(`[${sourceName}] JSON 파싱 완료: ${items.length}건`, 'ok');
+        return items;
     }
 
-    throw new Error(`알 수 없는 응답 형식: ${trimmed.substring(0, 100)}...`);
-}
-
-// 🔧 핵심 개선: 안정적인 프록시 순서와 방식
-async function fetchPublicDataAPI(apiUrl, sourceName) {
-    let lastError = '';
-
-    // 1순위: AllOrigins GET 방식 (가장 안정적 - JSON 래핑으로 인코딩 문제 해결)
-    try {
-        addDebug(`[${sourceName}] 프록시 1 (AllOrigins-GET) 시도`, 'info');
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-        const response = await fetch(proxyUrl);
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data && data.contents) {
-                return processApiResponse(data.contents, sourceName);
-            }
-        }
-    } catch (error) {
-        lastError = error.message;
-        addDebug(`[${sourceName}] 프록시 1 실패: ${error.message}`, 'warn');
-    }
-
-    // 2순위: ThingProxy (제한이 적은 무료 프록시)
-    try {
-        addDebug(`[${sourceName}] 프록시 2 (ThingProxy) 시도`, 'info');
-        const proxyUrl = `https://thingproxy.freeboard.io/fetch/${apiUrl}`;
-        const response = await fetch(proxyUrl);
-        
-        if (response.ok) {
-            const text = await response.text();
-            return processApiResponse(text, sourceName);
-        }
-    } catch (error) {
-        lastError = error.message;
-        addDebug(`[${sourceName}] 프록시 2 실패: ${error.message}`, 'warn');
-    }
-
-    // 3순위: Corsproxy.io (백업용)
-    try {
-        addDebug(`[${sourceName}] 프록시 3 (Corsproxy) 시도`, 'info');
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
-        const response = await fetch(proxyUrl);
-        
-        if (response.ok) {
-            const text = await response.text();
-            return processApiResponse(text, sourceName);
-        }
-    } catch (error) {
-        lastError = error.message;
-        addDebug(`[${sourceName}] 프록시 3 실패: ${error.message}`, 'warn');
-    }
-
-    // 4순위: JSONProxy (최후 수단)
-    try {
-        addDebug(`[${sourceName}] 프록시 4 (JSONProxy) 시도`, 'info');
-        const proxyUrl = `https://jsonp.afeld.me/?url=${encodeURIComponent(apiUrl)}`;
-        const response = await fetch(proxyUrl);
-        
-        if (response.ok) {
-            const text = await response.text();
-            return processApiResponse(text, sourceName);
-        }
-    } catch (error) {
-        lastError = error.message;
-        addDebug(`[${sourceName}] 프록시 4 실패: ${error.message}`, 'warn');
-    }
-
-    throw new Error(`모든 프록시 서버 실패. 마지막 오류: ${lastError}`);
-}
-
-
-function parseXMLResponse(xmlText, sourceName) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlText, 'application/xml');
-
-    // XML 파싱 오류 체크
-    const parseError = doc.querySelector('parsererror');
-    if (parseError) {
-        throw new Error('XML 파싱 오류: ' + parseError.textContent);
-    }
-
-    // 공공데이터포털 에러 메시지 감지
-    const resultCode = doc.querySelector('resultCode')?.textContent?.trim();
-    const resultMsg = doc.querySelector('resultMsg')?.textContent?.trim();
-    const returnAuthMsg = doc.querySelector('returnAuthMsg')?.textContent?.trim();
-    const errMsg = doc.querySelector('errMsg')?.textContent?.trim();
-
-    // 에러 코드 체크
-    if (resultCode && resultCode !== '00' && resultCode !== '0000') {
-        throw new Error(`API 오류 [${resultCode}]: ${resultMsg || '알 수 없는 오류'}`);
-    }
-
-    // 인증 오류 체크
-    if (returnAuthMsg && returnAuthMsg.includes('ERROR')) {
-        throw new Error(`API 키 오류: ${returnAuthMsg}`);
-    }
-    if (errMsg) {
-        throw new Error(`시스템 오류: ${errMsg}`);
-    }
-
-    // 정상 데이터 파싱
-    const items = [];
-    doc.querySelectorAll('item').forEach(item => {
-        const obj = {};
-        Array.from(item.children).forEach(child => {
-            obj[child.tagName] = child.textContent.trim();
-        });
-        items.push(obj);
-    });
-
-    addDebug(`XML 파싱 성공: ${items.length}건`, 'ok');
-    return items;
+    addDebug(`[${sourceName}] 알 수 없는 응답: ${trimmed.substring(0, 80)}`, 'err');
+    return [];
 }
 
 // ============================================================
-// API 호출 함수들
+// 국토부 API 호출
 // ============================================================
-// ============================================================
-// 기존 fetchApartments와 fetchChargers 함수를 모두 삭제하고
-// 아래 코드로 완전히 교체
-// ============================================================
-
 async function fetchApartments(keyword) {
-    const serviceKey = localStorage.getItem('apt_molit_key');
-    const keyType = localStorage.getItem('apt_molit_keytype') || 'auto';
-    
-    if (!serviceKey) {
-        throw new Error('국토부 API 키가 설정되지 않았습니다');
-    }
-    
-    const safeKey = getSafeEncodedKey(serviceKey, keyType);
-    const safeKeyword = encodeURIComponent(keyword);
-    
-    // 직접 URL 조합 (URLSearchParams로 serviceKey 처리 금지)
-    const apiUrl = `https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAptBasisInfo?serviceKey=${safeKey}&kaptName=${safeKeyword}&pageNo=1&numOfRows=30&_type=json`;
-    
-    addDebug(`국토부 V4 호출 (키타입: ${keyType})`, 'info');
-    
-    try {
-        const text = await fetchViaProxy(apiUrl, '국토부 V4');
-        return parseApiResponse(text, '국토부 V4');
-    } catch (error) {
-        // 인증 오류 시 키 타입 변경 제안
-        if (error.message.includes('SERVICE_KEY') || error.message.includes('AUTH')) {
-            throw new Error(`${error.message}\n💡 해결책: API 키 타입(Encoding/Decoding)을 바꿔보세요`);
-        }
-        throw error;
-    }
+    const rawKey  = localStorage.getItem('apt_molit_key');
+    const keyType = localStorage.getItem('apt_molit_keytype') || 'enc';
+
+    const apiUrl = buildApiUrl(
+        'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAptBasisInfo',
+        rawKey,
+        keyType,
+        { kaptName: keyword, pageNo: 1, numOfRows: 30, _type: 'json' }
+    );
+
+    addDebug(`국토부 URL (앞 120자): ${apiUrl.substring(0, 120)}...`, 'd-raw');
+
+    const text = await fetchViaProxy(apiUrl, '국토부 V4');
+    return parseApiResponse(text, '국토부 V4');
 }
 
+// ============================================================
+// 환경부 충전소 API 호출
+// ============================================================
 async function fetchChargers(aptName) {
-    const serviceKey = localStorage.getItem('apt_env_key');
-    const keyType = localStorage.getItem('apt_env_keytype') || 'auto';
-    
-    if (!serviceKey) return [];
-    
-    const safeKey = getSafeEncodedKey(serviceKey, keyType);
-    const safeAptName = encodeURIComponent(aptName);
-    
-    const apiUrl = `https://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey=${safeKey}&statNm=${safeAptName}&pageNo=1&numOfRows=100&dataType=JSON`;
-    
+    const rawKey  = localStorage.getItem('apt_env_key');
+    const keyType = localStorage.getItem('apt_env_keytype') || 'enc';
+
+    const apiUrl = buildApiUrl(
+        'https://apis.data.go.kr/B552584/EvCharger/getChargerInfo',
+        rawKey,
+        keyType,
+        { statNm: aptName, pageNo: 1, numOfRows: 100, dataType: 'JSON' }
+    );
+
     try {
         const text = await fetchViaProxy(apiUrl, '환경부');
         return parseApiResponse(text, '환경부');
-    } catch (error) {
-        addDebug(`충전기 조회 실패 (${aptName}): ${error.message}`, 'warn');
+    } catch (err) {
+        addDebug(`충전기 조회 실패 (${aptName}): ${err.message}`, 'warn');
         return [];
     }
 }
 
-
 // ============================================================
-// 위치 정보 파싱
-// ============================================================
-function parseLocation(location, note) {
-    const text = ((location || '') + ' ' + (note || '')).toLowerCase();
-    
-    if (text.includes('지하') || text.match(/b\d+/i) || text.includes('basement')) {
-        return { label: '지하', class: 'loc-underground' };
-    }
-    if (text.includes('지상') || text.includes('옥외') || text.includes('1층') || text.includes('ground')) {
-        return { label: '지상', class: 'loc-ground' };
-    }
-    return { label: '위치미상', class: 'loc-unknown' };
-}
-
-// ============================================================
-// 메인 검색 함수
+// 메인 검색
 // ============================================================
 async function performSearch() {
     const keyword = document.getElementById('searchInput').value.trim();
-    if (!keyword) {
-        showToast('⚠️ 검색어를 입력해주세요');
-        return;
-    }
+    if (!keyword) { showToast('⚠️ 검색어를 입력해주세요'); return; }
 
-    const molitKey = localStorage.getItem('apt_molit_key');
-    const envKey = localStorage.getItem('apt_env_key');
-    
-    if (!isValidKey(molitKey) || !isValidKey(envKey)) {
-        showToast('⚠️ API 키를 먼저 설정하세요\n(또는 🧪 데모 버튼 사용)');
+    const mk = localStorage.getItem('apt_molit_key');
+    const ek = localStorage.getItem('apt_env_key');
+    if (!isValidKey(mk) || !isValidKey(ek)) {
+        showToast('⚠️ API 키를 먼저 설정하세요 (또는 🧪 데모)');
         return;
     }
 
@@ -565,158 +631,118 @@ async function performSearch() {
     showDebug(true);
     clearDebug();
     addDebug(`=== 검색 시작: "${keyword}" ===`, 'info');
+    addDebug(`국토부 키타입: ${keyTypes.molit} / 환경부 키타입: ${keyTypes.env}`, 'info');
 
     try {
-        // 1단계: 아파트 목록 조회
-        const apartments = await fetchApartments(keyword, molitKey);
-        
-        if (apartments.length === 0) {
+        const apartments = await fetchApartments(keyword);
+
+        if (!apartments.length) {
             showToast('🔍 검색 결과가 없습니다');
             return;
         }
 
-        addDebug(`아파트 ${apartments.length}개 조회됨`, 'ok');
-
-        // 2단계: 각 아파트의 충전기 정보 조회 및 데이터 보강
-        const enrichedData = [];
-        
+        const enriched = [];
         for (const apt of apartments) {
-            addDebug(`충전기 조회: ${apt.kaptName}`, 'info');
-            
-            const chargers = await fetchChargers(apt.kaptName, envKey);
+            const chargers = await fetchChargers(apt.kaptName);
             const totalParking = parseInt(apt.kaptdaCnt) || 0;
-            const chargerCount = chargers.length;
-            const ratio = totalParking > 0 
-                ? parseFloat(((chargerCount / totalParking) * 100).toFixed(2))
-                : 0;
+            const cnt = chargers.length;
+            const ratio = totalParking > 0
+                ? parseFloat(((cnt / totalParking) * 100).toFixed(2)) : 0;
 
-            // 운영사별 집계
             const operators = {};
+            const locs = { 지하: 0, 지상: 0, 위치미상: 0 };
+
             chargers.forEach(c => {
                 const op = c.busiNm || c.bnm || '미확인';
                 operators[op] = (operators[op] || 0) + 1;
+                const l = getLocLabel(c.location, c.note);
+                locs[l]++;
             });
 
-            // 위치별 집계
-            const locations = { 지하: 0, 지상: 0, 위치미상: 0 };
-            chargers.forEach(c => {
-                const loc = parseLocation(c.location, c.note);
-                locations[loc.label]++;
-            });
-
-            // 설치년도 분석
-            const years = chargers
-                .map(c => c.upddt?.substring(0, 4))
-                .filter(y => y && y > 2000)
-                .map(y => parseInt(y));
-            
-            const installYearRange = years.length > 0 
-                ? { min: Math.min(...years), max: Math.max(...years) }
-                : null;
-
-            enrichedData.push({
-                // 기본 정보
-                kaptCode: apt.kaptCode || '',
+            enriched.push({
                 kaptName: apt.kaptName || '',
-                kaptAddr: apt.kaptAddr || '',
-                doroJuso: apt.doroJuso || '',
-                kaptdaCnt: apt.kaptdaCnt || '0',
+                kaptAddr: apt.kaptAddr || apt.doroJuso || '',
                 kaptTotHoCnt: apt.kaptTotHoCnt || '0',
                 kaptDongCnt: apt.kaptDongCnt || '0',
                 kaptUseDate: apt.kaptUseDate || '',
                 latitude: apt.latitude || '',
                 longitude: apt.longitude || '',
-                
-                // 충전기 관련
-                chargers,
-                chargerCount,
-                totalParking,
-                ratio,
-                hasChargers: chargerCount > 0,
-                operators,
-                locations,
-                installYearRange
+                totalParking, chargerCount: cnt, ratio,
+                hasChargers: cnt > 0,
+                chargers, operators, locs
             });
         }
 
-        currentData = enrichedData;
+        currentData = enriched;
         renderList(currentData);
         plotMarkers(currentData);
-        
-        addDebug(`=== 검색 완료: ${currentData.length}개 단지 ===`, 'ok');
-        showToast(`✅ ${currentData.length}개 단지 검색 완료`);
+        addDebug(`=== 검색 완료: ${enriched.length}개 단지 ===`, 'ok');
+        showToast(`✅ ${enriched.length}개 단지 검색 완료`);
 
-    } catch (error) {
-        addDebug(`검색 오류: ${error.message}`, 'err');
-        showToast(`❌ ${error.message}`);
+    } catch (err) {
+        addDebug(`오류: ${err.message}`, 'err');
+        showToast(`❌ ${err.message}`);
     } finally {
         showLoading(false);
     }
 }
 
 // ============================================================
-// 지도 마커 표시
+// 위치 파싱
+// ============================================================
+function getLocLabel(location, note) {
+    const t = ((location || '') + ' ' + (note || '')).toLowerCase();
+    if (t.includes('지하') || /b\d/i.test(t)) return '지하';
+    if (t.includes('지상') || t.includes('옥외') || t.includes('1층')) return '지상';
+    return '위치미상';
+}
+
+function getLocClass(label) {
+    return { '지하': 'loc-b', '지상': 'loc-g', '위치미상': 'loc-u' }[label] || 'loc-u';
+}
+
+// ============================================================
+// 지도 마커
 // ============================================================
 function plotMarkers(data) {
-    // 기존 마커 제거
-    markers.forEach(marker => leafletMap.removeLayer(marker));
+    markers.forEach(m => leafletMap.removeLayer(m));
     markers = [];
-
     const bounds = [];
 
-    data.forEach((apt, index) => {
+    data.forEach((apt, i) => {
         const lat = parseFloat(apt.latitude);
         const lng = parseFloat(apt.longitude);
-        
         if (!lat || !lng) return;
 
-        // 커스텀 마커 아이콘
-        const markerIcon = L.divIcon({
+        const icon = L.divIcon({
             className: '',
-            html: `
-                <div style="
-                    background: ${apt.hasChargers ? '#16a34a' : '#dc2626'};
-                    color: white; width: 36px; height: 36px;
-                    border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
-                    display: flex; align-items: center; justify-content: center;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid white;
-                ">
-                    <span style="transform: rotate(45deg); font-size: 16px;">
-                        ${apt.hasChargers ? '⚡' : '🏢'}
-                    </span>
-                </div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 36],
-            popupAnchor: [0, -36]
+            html: `<div style="
+                background:${apt.hasChargers ? '#16a34a' : '#dc2626'};
+                color:white; width:36px; height:36px;
+                border-radius:50% 50% 50% 0; transform:rotate(-45deg);
+                display:flex; align-items:center; justify-content:center;
+                box-shadow:0 2px 8px rgba(0,0,0,.3); border:2px solid white;">
+                <span style="transform:rotate(45deg);font-size:16px;">
+                    ${apt.hasChargers ? '⚡' : '🏢'}
+                </span></div>`,
+            iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36]
         });
 
-        const marker = L.marker([lat, lng], { icon: markerIcon })
-            .addTo(leafletMap)
-            .bindPopup(`
-                <div style="min-width: 200px; font-family: 'Malgun Gothic', sans-serif;">
-                    <strong style="font-size: 1rem;">${apt.kaptName}</strong><br>
-                    <span style="color: #64748b; font-size: 0.85rem;">${apt.kaptAddr}</span><br><br>
-                    🅿️ 총 주차면: <strong>${apt.totalParking.toLocaleString()}면</strong><br>
-                    ⚡ 충전기 수: <strong style="color: ${apt.hasChargers ? '#16a34a' : '#dc2626'}">
-                        ${apt.chargerCount}기</strong><br>
-                    📊 설치 비율: <strong>${apt.ratio}%</strong>
-                </div>
-            `);
-
-        marker.on('click', () => {
-            highlightCard(index);
-            showDetailModal(index);
-        });
-
+        const marker = L.marker([lat, lng], { icon }).addTo(leafletMap);
+        marker.bindPopup(`
+            <strong>${apt.kaptName}</strong><br>
+            <span style="color:#64748b;font-size:.85rem">${apt.kaptAddr}</span><br><br>
+            🅿️ 주차면: <strong>${apt.totalParking.toLocaleString()}</strong><br>
+            ⚡ 충전기: <strong style="color:${apt.hasChargers?'#16a34a':'#dc2626'}">
+                ${apt.chargerCount}기</strong><br>
+            📊 비율: <strong>${apt.ratio}%</strong>
+        `);
+        marker.on('click', () => { highlightCard(i); showDetailModal(i); });
         markers.push(marker);
         bounds.push([lat, lng]);
     });
 
-    // 모든 마커가 보이도록 지도 범위 조정
-    if (bounds.length > 0) {
-        leafletMap.fitBounds(bounds, { padding: [40, 40] });
-    }
-
+    if (bounds.length) leafletMap.fitBounds(bounds, { padding: [40, 40] });
     document.getElementById('mapCount').textContent = `${data.length}개 단지`;
 }
 
@@ -724,20 +750,16 @@ function plotMarkers(data) {
 // 목록 렌더링
 // ============================================================
 function renderList(data) {
-    const container = document.getElementById('resultList');
     document.getElementById('listCount').textContent = `${data.length}건`;
+    const el = document.getElementById('resultList');
 
-    if (data.length === 0) {
-        container.innerHTML = `
-            <div class="empty">
-                <div class="icon">🔍</div>
-                <p>검색 결과가 없습니다</p>
-            </div>`;
+    if (!data.length) {
+        el.innerHTML = `<div class="empty"><div class="icon">🔍</div><p>결과 없음</p></div>`;
         return;
     }
 
-    container.innerHTML = data.map((apt, index) => `
-        <div class="apt-card" id="card-${index}" onclick="showDetailModal(${index})">
+    el.innerHTML = data.map((apt, i) => `
+        <div class="apt-card" id="card-${i}" onclick="showDetailModal(${i})">
             <div class="card-top">
                 <div class="apt-name">🏢 ${apt.kaptName}</div>
                 <span class="badge ${apt.hasChargers ? 'badge-y' : 'badge-n'}">
@@ -759,125 +781,83 @@ function renderList(data) {
                     <div class="sl">설치 비율</div>
                 </div>
             </div>
-            ${apt.hasChargers ? `
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${Math.min(apt.ratio * 10, 100)}%"></div>
-            </div>` : ''}
-        </div>
-    `).join('');
+        </div>`).join('');
 }
 
 // ============================================================
 // 상세 모달
 // ============================================================
-function showDetailModal(index) {
-    const apt = currentData[index];
-    highlightCard(index);
+function showDetailModal(i) {
+    const apt = currentData[i];
+    highlightCard(i);
 
-    const operatorList = Object.entries(apt.operators)
-        .map(([op, count]) => `<li>${op}: ${count}기</li>`).join('');
-
-    const chargerRows = apt.chargers.map(charger => {
-        const loc = parseLocation(charger.location, charger.note);
-        const typeName = CHARGER_TYPES[charger.chgerType] || charger.chgerType || '-';
-        const output = charger.output ? `${charger.output}kW` : '-';
-        
-        return `
-            <tr>
-                <td>${charger.busiNm || charger.bnm || '-'}</td>
-                <td>${output}</td>
-                <td>${typeName}</td>
-                <td><span class="loc-badge ${loc.class}">${loc.label}</span></td>
-                <td>${charger.location || charger.note || '-'}</td>
-                <td>${charger.useTime || '24시간'}</td>
-            </tr>`;
+    const chargerRows = apt.chargers.map(c => {
+        const loc = getLocLabel(c.location, c.note);
+        return `<tr>
+            <td>${c.busiNm || '-'}</td>
+            <td>${c.output ? c.output + 'kW' : '-'}</td>
+            <td>${CHARGER_TYPES[c.chgerType] || c.chgerType || '-'}</td>
+            <td><span class="loc-badge ${getLocClass(loc)}">${loc}</span></td>
+            <td>${c.location || c.note || '-'}</td>
+        </tr>`;
     }).join('');
 
     document.getElementById('modalBody').innerHTML = `
         <h2>🏢 ${apt.kaptName}</h2>
         <div class="modal-addr">📍 ${apt.kaptAddr}</div>
-
         <div class="modal-section">
             <h3>📊 단지 기본 정보</h3>
-            <table class="info-table">
-                <tr>
-                    <th>총 세대수</th><td>${parseInt(apt.kaptTotHoCnt || 0).toLocaleString()}세대</td>
-                    <th>총 동수</th><td>${apt.kaptDongCnt || '-'}동</td>
-                </tr>
-                <tr>
-                    <th>총 주차면</th><td>${apt.totalParking.toLocaleString()}면</td>
-                    <th>사용승인일</th><td>${apt.kaptUseDate ? apt.kaptUseDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') : '-'}</td>
-                </tr>
-                <tr>
-                    <th>충전기 수</th><td><strong style="color: #1d4ed8">${apt.chargerCount}기</strong></td>
-                    <th>설치 비율</th><td><strong style="color: #16a34a">${apt.ratio}%</strong></td>
-                </tr>
-            </table>
-        </div>
-
-        ${apt.hasChargers ? `
-        <div class="modal-section">
-            <h3>🏢 운영사별 현황</h3>
-            <ul style="padding-left: 20px; font-size: 0.9rem; color: #374151;">
-                ${operatorList}
-            </ul>
-        </div>
-
-        <div class="modal-section">
-            <h3>📍 설치 위치별 현황</h3>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;">
-                <span class="loc-badge loc-underground">지하: ${apt.locations['지하']}기</span>
-                <span class="loc-badge loc-ground">지상: ${apt.locations['지상']}기</span>
-                <span class="loc-badge loc-unknown">위치미상: ${apt.locations['위치미상']}기</span>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">총 주차면</div>
+                    <div class="info-value">${apt.totalParking.toLocaleString()}면</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">총 세대수</div>
+                    <div class="info-value">${parseInt(apt.kaptTotHoCnt||0).toLocaleString()}세대</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">충전기 수 / 설치 비율</div>
+                    <div class="info-value">${apt.chargerCount}기 / ${apt.ratio}%</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">위치별 (지하/지상/미상)</div>
+                    <div class="info-value">${apt.locs.지하}/${apt.locs.지상}/${apt.locs.위치미상}기</div>
+                </div>
             </div>
         </div>
-
+        ${apt.hasChargers ? `
         <div class="modal-section">
             <h3>🔌 충전기 상세 목록</h3>
-            <div style="overflow-x: auto;">
+            <div style="overflow-x:auto;">
                 <table class="charger-table">
                     <thead>
                         <tr>
-                            <th>운영사</th>
-                            <th>용량</th>
-                            <th>충전타입</th>
-                            <th>위치구분</th>
-                            <th>상세위치</th>
-                            <th>이용시간</th>
+                            <th>운영사</th><th>용량</th><th>충전타입</th>
+                            <th>위치구분</th><th>상세위치</th>
                         </tr>
                     </thead>
                     <tbody>${chargerRows}</tbody>
                 </table>
             </div>
-        </div>
-        ` : `
+        </div>` : `
         <div class="empty">
             <div class="icon">❌</div>
             <p>설치된 전기차 충전기가 없습니다</p>
-        </div>
-        `}
+        </div>`}
     `;
 
     document.getElementById('modalOverlay').classList.add('show');
 }
 
-function closeModal(event) {
-    if (event && event.target !== document.getElementById('modalOverlay')) return;
+function closeModal() {
     document.getElementById('modalOverlay').classList.remove('show');
 }
 
-function highlightCard(index) {
-    // 모든 카드 하이라이트 제거
-    document.querySelectorAll('.apt-card').forEach(card => {
-        card.classList.remove('active');
-    });
-
-    // 선택된 카드 하이라이트
-    const card = document.getElementById(`card-${index}`);
-    if (card) {
-        card.classList.add('active');
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+function highlightCard(i) {
+    document.querySelectorAll('.apt-card').forEach(c => c.classList.remove('active'));
+    const card = document.getElementById(`card-${i}`);
+    if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 }
 
 // ============================================================
@@ -885,114 +865,65 @@ function highlightCard(index) {
 // ============================================================
 function loadDemo() {
     currentData = [
-        {
-            kaptName: '래미안 강남포레스트',
-            kaptAddr: '서울특별시 강남구 일원동 641',
-            kaptdaCnt: '1850',
-            kaptTotHoCnt: '1957',
-            kaptDongCnt: '10',
-            kaptUseDate: '20181015',
-            latitude: '37.4836',
-            longitude: '127.0597',
-            totalParking: 1850,
-            chargerCount: 8,
-            ratio: 0.43,
-            hasChargers: true,
-            operators: { '한국환경공단': 4, '차지비': 3, 'GS칼텍스': 1 },
-            locations: { '지하': 6, '지상': 2, '위치미상': 0 },
-            chargers: [
-                { busiNm: '한국환경공단', output: '50', chgerType: '04', location: '지하1층 A구역', note: '', useTime: '24시간' },
-                { busiNm: '한국환경공단', output: '50', chgerType: '04', location: '지하1층 A구역', note: '', useTime: '24시간' },
-                { busiNm: '차지비', output: '100', chgerType: '04', location: '지하2층 B구역', note: '', useTime: '24시간' },
-                { busiNm: '차지비', output: '7', chgerType: '02', location: '지하2층 B구역', note: '', useTime: '24시간' },
-                { busiNm: '차지비', output: '7', chgerType: '02', location: '지하1층 C구역', note: '', useTime: '24시간' },
-                { busiNm: 'GS칼텍스', output: '200', chgerType: '04', location: '지상 주차장', note: '', useTime: '24시간' },
-                { busiNm: '한국환경공단', output: '50', chgerType: '04', location: '지상 주차장', note: '', useTime: '24시간' },
-                { busiNm: '한국환경공단', output: '7', chgerType: '02', location: '지하1층 D구역', note: '', useTime: '24시간' }
-            ]
+        { kaptName: '래미안 강남포레스트', kaptAddr: '서울특별시 강남구 일원동 641',
+          kaptTotHoCnt: '1957', kaptDongCnt: '10', kaptUseDate: '20181015',
+          latitude: '37.4836', longitude: '127.0597',
+          totalParking: 1850, chargerCount: 8, ratio: 0.43, hasChargers: true,
+          operators: { '한국환경공단': 4, '차지비': 3, 'GS칼텍스': 1 },
+          locs: { 지하: 6, 지상: 2, 위치미상: 0 },
+          chargers: [
+              { busiNm: '한국환경공단', output: '50', chgerType: '04', location: '지하1층 A구역', note: '' },
+              { busiNm: '차지비', output: '100', chgerType: '04', location: '지하2층 B구역', note: '' },
+              { busiNm: 'GS칼텍스', output: '200', chgerType: '04', location: '지상 주차장', note: '' }
+          ]
         },
-        {
-            kaptName: '힐스테이트 판교역',
-            kaptAddr: '경기도 성남시 분당구 백현동 532',
-            kaptdaCnt: '920',
-            kaptTotHoCnt: '850',
-            kaptDongCnt: '5',
-            kaptUseDate: '20191201',
-            latitude: '37.3943',
-            longitude: '127.1112',
-            totalParking: 920,
-            chargerCount: 4,
-            ratio: 0.43,
-            hasChargers: true,
-            operators: { '한국전력': 2, '에버온': 2 },
-            locations: { '지하': 3, '지상': 1, '위치미상': 0 },
-            chargers: [
-                { busiNm: '한국전력', output: '7', chgerType: '02', location: '지하1층', note: '', useTime: '24시간' },
-                { busiNm: '한국전력', output: '7', chgerType: '02', location: '지하2층', note: '', useTime: '24시간' },
-                { busiNm: '에버온', output: '50', chgerType: '01', location: '지하1층', note: '', useTime: '24시간' },
-                { busiNm: '에버온', output: '50', chgerType: '04', location: '지상', note: '', useTime: '24시간' }
-            ]
+        { kaptName: '힐스테이트 판교역', kaptAddr: '경기도 성남시 분당구 백현동 532',
+          kaptTotHoCnt: '850', kaptDongCnt: '5', kaptUseDate: '20191201',
+          latitude: '37.3943', longitude: '127.1112',
+          totalParking: 920, chargerCount: 4, ratio: 0.43, hasChargers: true,
+          operators: { '한국전력': 2, '에버온': 2 },
+          locs: { 지하: 3, 지상: 1, 위치미상: 0 },
+          chargers: [
+              { busiNm: '한국전력', output: '7', chgerType: '02', location: '지하1층', note: '' },
+              { busiNm: '에버온', output: '50', chgerType: '01', location: '지상', note: '' }
+          ]
         },
-        {
-            kaptName: '광교 아이파크',
-            kaptAddr: '경기도 수원시 영통구 이의동 1261',
-            kaptdaCnt: '1340',
-            kaptTotHoCnt: '1100',
-            kaptDongCnt: '8',
-            kaptUseDate: '20170301',
-            latitude: '37.2977',
-            longitude: '127.0566',
-            totalParking: 1340,
-            chargerCount: 0,
-            ratio: 0,
-            hasChargers: false,
-            operators: {},
-            locations: { '지하': 0, '지상': 0, '위치미상': 0 },
-            chargers: []
+        { kaptName: '광교 아이파크', kaptAddr: '경기도 수원시 영통구 이의동 1261',
+          kaptTotHoCnt: '1100', kaptDongCnt: '8', kaptUseDate: '20170301',
+          latitude: '37.2977', longitude: '127.0566',
+          totalParking: 1340, chargerCount: 0, ratio: 0, hasChargers: false,
+          operators: {}, locs: { 지하: 0, 지상: 0, 위치미상: 0 }, chargers: []
         }
     ];
-
     renderList(currentData);
     plotMarkers(currentData);
     showToast('🧪 데모 데이터 3개 단지 로드 완료');
 }
 
 // ============================================================
-// 유틸리티 함수들
+// 유틸리티
 // ============================================================
 function showLoading(show) {
     document.getElementById('loadingWrap').classList.toggle('show', show);
     document.getElementById('resultList').style.display = show ? 'none' : 'block';
 }
-
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3500);
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
 }
-
-function addDebug(message, type = 'info') {
+function addDebug(msg, type = 'info') {
     const box = document.getElementById('debugBox');
     const line = document.createElement('div');
-    line.className = `d-${type}`;
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    line.className = type === 'd-raw' ? 'd-raw' : `d-${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
     box.appendChild(line);
     box.scrollTop = box.scrollHeight;
-    
-    // 디버그 라인 수 제한 (성능 최적화)
-    if (box.children.length > 50) {
-        box.removeChild(box.firstChild);
-    }
+    if (box.children.length > 60) box.removeChild(box.firstChild);
 }
-
-function showDebug(show) {
-    document.getElementById('debugBox').classList.toggle('show', show);
-}
-
-function clearDebug() {
-    document.getElementById('debugBox').innerHTML = '';
-}
+function showDebug(show) { document.getElementById('debugBox').classList.toggle('show', show); }
+function clearDebug() { document.getElementById('debugBox').innerHTML = ''; }
 </script>
 </body>
 </html>
