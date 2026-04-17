@@ -1,157 +1,616 @@
-import requests
-import json
-from urllib.parse import urlencode
-
-def test_wfs_connection(api_key):
-    """
-    NSDI 지적도 WFS 연결 및 데이터 조회 종합 테스트
-    """
-    
-    base_url = "https://api.vworld.kr/req/wfs"
-    
-    # 테스트 시나리오 정의
-    test_cases = {
-        "1. GetCapabilities": {
-            "params": {
-                "SERVICE": "WFS",
-                "VERSION": "2.0.0", 
-                "REQUEST": "GetCapabilities",
-                "key": api_key
-            },
-            "expected_content": "ServiceIdentification"
-        },
-        
-        "2. DescribeFeatureType": {
-            "params": {
-                "SERVICE": "WFS",
-                "VERSION": "2.0.0",
-                "REQUEST": "DescribeFeatureType", 
-                "TYPENAME": "lp_pa_cbnd_bubun",
-                "key": api_key
-            },
-            "expected_content": "complexType"
-        },
-        
-        "3. GetFeature (WGS84)": {
-            "params": {
-                "SERVICE": "WFS",
-                "VERSION": "2.0.0",
-                "REQUEST": "GetFeature",
-                "TYPENAME": "lp_pa_cbnd_bubun",
-                "SRSNAME": "EPSG:4326",
-                "BBOX": "126.974,37.575,126.977,37.578,EPSG:4326",
-                "COUNT": "5",
-                "OUTPUTFORMAT": "application/json",
-                "key": api_key
-            },
-            "expected_content": "features"
-        },
-        
-        "4. GetFeature (Korea 2000)": {
-            "params": {
-                "SERVICE": "WFS", 
-                "VERSION": "2.0.0",
-                "REQUEST": "GetFeature",
-                "TYPENAME": "lp_pa_cbnd_bubun",
-                "SRSNAME": "EPSG:5179",
-                "BBOX": "953900,1952100,954200,1952400,EPSG:5179",
-                "COUNT": "5", 
-                "OUTPUTFORMAT": "application/json",
-                "key": api_key
-            },
-            "expected_content": "features"
-        },
-        
-        "5. CQL Filter Test": {
-            "params": {
-                "SERVICE": "WFS",
-                "VERSION": "2.0.0", 
-                "REQUEST": "GetFeature",
-                "TYPENAME": "lp_pa_cbnd_bubun",
-                "SRSNAME": "EPSG:4326",
-                "CQL_FILTER": "jimok='대'",
-                "COUNT": "3",
-                "OUTPUTFORMAT": "application/json",
-                "key": api_key
-            },
-            "expected_content": "features"
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSDI 지적도 WFS 연결 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    }
-    
-    print("🚀 NSDI 지적도 WFS 연결 테스트 시작")
-    print("=" * 60)
-    
-    success_count = 0
-    
-    for test_name, config in test_cases.items():
-        print(f"\n{test_name}")
-        print("-" * 40)
-        
-        # URL 생성
-        full_url = f"{base_url}?{urlencode(config['params'])}"
-        print(f"🔗 URL: {full_url}")
-        
-        try:
-            response = requests.get(base_url, params=config["params"], timeout=30)
-            
-            # 상태 코드 확인
-            print(f"📊 HTTP Status: {response.status_code}")
-            print(f"📦 Content-Type: {response.headers.get('Content-Type', 'N/A')}")
-            print(f"📏 Response Size: {len(response.content):,} bytes")
-            
-            if response.status_code == 200:
-                # 응답 내용 검증
-                content = response.text
-                
-                if config["expected_content"] in content:
-                    print(f"✅ 테스트 성공!")
-                    success_count += 1
-                    
-                    # JSON 응답인 경우 추가 분석
-                    if "application/json" in response.headers.get("Content-Type", ""):
-                        try:
-                            data = response.json()
-                            
-                            if "features" in data:
-                                features = data["features"]
-                                print(f"🏠 반환된 필지 수: {len(features)}개")
-                                
-                                if features:
-                                    first_feature = features[0]
-                                    props = first_feature.get("properties", {})
-                                    print(f"📋 첫 번째 필지 속성:")
-                                    for key, value in list(props.items())[:5]:
-                                        print(f"   • {key}: {value}")
-                                        
-                        except json.JSONDecodeError:
-                            print("⚠️  JSON 파싱 실패")
-                    
-                else:
-                    print(f"❌ 예상 내용 '{config['expected_content']}' 없음")
-                    print(f"📝 응답 미리보기: {content[:200]}...")
-                    
-            else:
-                print(f"❌ HTTP 오류: {response.status_code}")
-                print(f"📝 오류 내용: {response.text[:300]}...")
-                
-        except requests.exceptions.Timeout:
-            print("⏰ 요청 시간 초과 (30초)")
-        except requests.exceptions.ConnectionError:
-            print("🔌 연결 오류 - 네트워크 상태 확인")
-        except Exception as e:
-            print(f"❌ 예외 발생: {e}")
-    
-    print(f"\n{'='*60}")
-    print(f"🎯 테스트 완료: {success_count}/{len(test_cases)} 성공")
-    
-    if success_count == len(test_cases):
-        print("🎉 모든 테스트 통과! WFS 서비스가 정상 작동합니다.")
-    elif success_count > 0:
-        print("⚠️  일부 테스트만 성공. API 키나 파라미터를 확인하세요.")
-    else:
-        print("💥 모든 테스트 실패. API 키나 네트워크 상태를 점검하세요.")
 
-# 실행 예시
-if __name__ == "__main__":
-    API_KEY = "A761A4A0-74AA-3598-91FD-415F26966CD0"
-    test_wfs_connection(API_KEY)
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .api-section {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .api-section label {
+            display: block;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            font-size: 0.8rem;
+            padding: 8px 15px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .test-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .test-card.running {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .test-card.success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .test-card.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .test-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .status-waiting { background: #e9ecef; color: #6c757d; }
+        .status-running { background: #fff3cd; color: #856404; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+
+        .test-url {
+            background: #f1f3f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            word-break: break-all;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .test-result {
+            min-height: 60px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .log-section {
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .log-header {
+            background: #34495e;
+            padding: 15px 20px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-body {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #ecf0f1;
+            background: #2c3e50;
+        }
+
+        .log-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-body::-webkit-scrollbar-track {
+            background: #34495e;
+        }
+
+        .log-body::-webkit-scrollbar-thumb {
+            background: #95a5a6;
+            border-radius: 4px;
+        }
+
+        .log-info { color: #3498db; }
+        .log-success { color: #2ecc71; }
+        .log-error { color: #e74c3c; }
+        .log-warn { color: #f39c12; }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cors-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cors-notice h4 {
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .cors-notice p {
+            color: #856404;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ NSDI 지적도 WFS 연결 테스트</h1>
+            <p>CadastralService / lp_pa_cbnd_bubun · V-World API 테스트 도구</p>
+        </div>
+
+        <div class="content">
+            <div class="cors-notice">
+                <h4>⚠️ CORS 정책 주의사항</h4>
+                <p>브라우저에서 직접 API를 호출할 때 CORS 오류가 발생할 수 있습니다. 
+                브이월드 개발자센터에서 현재 도메인(localhost 등)을 허용 도메인으로 등록하거나, 
+                각 테스트의 '새 탭으로 열기' 기능을 활용하세요.</p>
+            </div>
+
+            <div class="api-section">
+                <label>🔑 V-World API 인증키</label>
+                <div class="input-group">
+                    <input type="text" id="apiKey" placeholder="브이월드에서 발급받은 API 키를 입력하세요">
+                    <button class="btn btn-primary" onclick="runAllTests()" id="runAllBtn">
+                        전체 테스트 실행
+                    </button>
+                </div>
+            </div>
+
+            <div class="test-grid" id="testGrid">
+                <!-- 테스트 카드들이 동적으로 생성됩니다 -->
+            </div>
+
+            <div class="log-section">
+                <div class="log-header">
+                    <span>📋 실행 로그</span>
+                    <button class="btn btn-secondary" onclick="clearLog()">로그 지우기</button>
+                </div>
+                <div class="log-body" id="logBody">
+                    <div class="log-info">테스트를 실행하면 결과가 여기에 표시됩니다...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "https://api.vworld.kr/req/wfs";
+        
+        const TEST_CASES = [
+            {
+                id: "capabilities",
+                name: "1. GetCapabilities",
+                desc: "WFS 서비스 정보 및 지원 레이어 확인",
+                buildParams: (key) => ({
+                    SERVICE: "WFS",
+                    VERSION: "2.0.0", 
+                    REQUEST: "GetCapabilities",
+                    key: key
+                }),
+                expectedContent: "ServiceIdentification",
+                isJson: false
+            },
+            {
+                id: "describe",
+                name: "2. DescribeFeatureType",
+                desc: "lp_pa_cbnd_bubun 레이어 스키마 확인",
+                buildParams: (key) => ({
+                    SERVICE: "WFS",
+                    VERSION: "2.0.0",
+                    REQUEST: "DescribeFeatureType", 
+                    TYPENAME: "lp_pa_cbnd_bubun",
+                    key: key
+                }),
+                expectedContent: "complexType",
+                isJson: false
+            },
+            {
+                id: "wgs84",
+                name: "3. GetFeature (WGS84)",
+                desc: "서울 종로구 경복궁 주변 · EPSG:4326",
+                buildParams: (key) => ({
+                    SERVICE: "WFS",
+                    VERSION: "2.0.0",
+                    REQUEST: "GetFeature",
+                    TYPENAME: "lp_pa_cbnd_bubun",
+                    SRSNAME: "EPSG:4326",
+                    BBOX: "126.974,37.575,126.977,37.578,EPSG:4326",
+                    COUNT: "5",
+                    OUTPUTFORMAT: "application/json",
+                    key: key
+                }),
+                expectedContent: "features",
+                isJson: true
+            },
+            {
+                id: "korea2000", 
+                name: "4. GetFeature (Korea 2000)",
+                desc: "동일 지역 · EPSG:5179 좌표계",
+                buildParams: (key) => ({
+                    SERVICE: "WFS",
+                    VERSION: "2.0.0",
+                    REQUEST: "GetFeature",
+                    TYPENAME: "lp_pa_cbnd_bubun", 
+                    SRSNAME: "EPSG:5179",
+                    BBOX: "953900,1952100,954200,1952400,EPSG:5179",
+                    COUNT: "5",
+                    OUTPUTFORMAT: "application/json",
+                    key: key
+                }),
+                expectedContent: "features",
+                isJson: true
+            },
+            {
+                id: "cql",
+                name: "5. CQL Filter Test",
+                desc: "지목이 '대'인 필지 검색",
+                buildParams: (key) => ({
+                    SERVICE: "WFS",
+                    VERSION: "2.0.0",
+                    REQUEST: "GetFeature",
+                    TYPENAME: "lp_pa_cbnd_bubun",
+                    SRSNAME: "EPSG:4326", 
+                    CQL_FILTER: "jimok='대'",
+                    COUNT: "3",
+                    OUTPUTFORMAT: "application/json",
+                    key: key
+                }),
+                expectedContent: "features",
+                isJson: true
+            }
+        ];
+
+        function initializeCards() {
+            const grid = document.getElementById('testGrid');
+            grid.innerHTML = '';
+            
+            TEST_CASES.forEach(test => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.id = `card-${test.id}`;
+                
+                card.innerHTML = `
+                    <div class="test-header">
+                        <div class="test-title">${test.name}</div>
+                        <div class="status-badge status-waiting" id="status-${test.id}">대기</div>
+                    </div>
+                    <div style="color: #666; font-size: 0.8rem; margin-bottom: 10px;">${test.desc}</div>
+                    <div class="test-url" id="url-${test.id}">URL은 실행 후 표시됩니다</div>
+                    <div class="test-result" id="result-${test.id}">—</div>
+                    <div style="margin-top: 15px; display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="runSingleTest('${test.id}')">
+                            개별 실행
+                        </button>
+                        <button class="btn btn-secondary" onclick="openInNewTab('${test.id}')" id="open-${test.id}" style="display:none;">
+                            새 탭으로 열기
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function log(message, type = 'info') {
+            const logBody = document.getElementById('logBody');
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `log-${type}`;
+            div.innerHTML = `[${time}] ${message}`;
+            logBody.appendChild(div);
+            logBody.scrollTop = logBody.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logBody').innerHTML = 
+                '<div class="log-info">로그가 초기화되었습니다.</div>';
+        }
+
+        function buildUrl(testId) {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                alert('API 키를 먼저 입력하세요.');
+                return null;
+            }
+
+            const test = TEST_CASES.find(t => t.id === testId);
+            const params = test.buildParams(apiKey);
+            const queryString = new URLSearchParams(params).toString();
+            return `${BASE_URL}?${queryString}`;
+        }
+
+        function updateCardState(testId, state, message = '') {
+            const card = document.getElementById(`card-${testId}`);
+            const status = document.getElementById(`status-${testId}`);
+            const result = document.getElementById(`result-${testId}`);
+            
+            card.className = 'test-card';
+            
+            if (state === 'running') {
+                card.classList.add('running');
+                status.className = 'status-badge status-running';
+                status.innerHTML = '<span class="spinner"></span>실행중';
+            } else if (state === 'success') {
+                card.classList.add('success');
+                status.className = 'status-badge status-success';
+                status.textContent = '✅ 성공';
+            } else if (state === 'error') {
+                card.classList.add('error');
+                status.className = 'status-badge status-error';
+                status.textContent = '❌ 실패';
+            } else {
+                status.className = 'status-badge status-waiting';
+                status.textContent = '대기';
+            }
+            
+            if (message) {
+                result.innerHTML = message;
+            }
+        }
+
+        async function runSingleTest(testId) {
+            const url = buildUrl(testId);
+            if (!url) return false;
+
+            const test = TEST_CASES.find(t => t.id === testId);
+            
+            // URL 표시
+            document.getElementById(`url-${testId}`).textContent = url;
+            document.getElementById(`open-${testId}`).style.display = 'inline-block';
+            
+            updateCardState(testId, 'running');
+            log(`🔍 ${test.name} 테스트 시작`);
+
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                const contentType = response.headers.get('Content-Type') || '';
+                
+                log(`   HTTP ${response.status} · ${contentType} · ${text.length.toLocaleString()} bytes`);
+
+                if (response.ok && text.includes(test.expectedContent)) {
+                    let resultHtml = `<div style="color: #28a745; font-weight: bold;">✅ 테스트 성공</div>`;
+                    resultHtml += `<div style="color: #666; font-size: 0.8rem; margin-top: 5px;">HTTP ${response.status} · ${text.length.toLocaleString()} bytes</div>`;
+                    
+                    if (test.isJson) {
+                        try {
+                            const data = JSON.parse(text);
+                            if (data.features) {
+                                resultHtml += `<div style="color: #007bff; margin-top: 8px;">🏠 필지 수: ${data.features.length}개</div>`;
+                                
+                                if (data.features.length > 0) {
+                                    const props = data.features[0].properties || {};
+                                    const entries = Object.entries(props).slice(0, 3);
+                                    resultHtml += '<div style="margin-top: 8px; font-size: 0.8rem;">';
+                                    entries.forEach(([key, value]) => {
+                                        resultHtml += `<div>• ${key}: ${value || 'N/A'}</div>`;
+                                    });
+                                    resultHtml += '</div>';
+                                }
+                            }
+                        } catch (e) {
+                            resultHtml += `<div style="color: #ffc107;">⚠️ JSON 파싱 실패</div>`;
+                        }
+                    }
+                    
+                    updateCardState(testId, 'success', resultHtml);
+                    log(`✅ ${test.name} 성공`, 'success');
+                    return true;
+                } else {
+                    const preview = text.substring(0, 150).replace(/</g, '&lt;');
+                    const resultHtml = `
+                        <div style="color: #dc3545; font-weight: bold;">❌ 테스트 실패</div>
+                        <div style="color: #666; font-size: 0.8rem; margin-top: 5px;">HTTP ${response.status}</div>
+                        <div style="color: #666; font-size: 0.75rem; margin-top: 5px; font-family: monospace;">${preview}...</div>
+                    `;
+                    updateCardState(testId, 'error', resultHtml);
+                    log(`❌ ${test.name} 실패 - HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                let errorMessage = error.message;
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = 'CORS 정책 또는 네트워크 오류';
+                }
+                
+                const resultHtml = `
+                    <div style="color: #dc3545; font-weight: bold;">❌ 요청 실패</div>
+                    <div style="color: #ffc107; font-size: 0.8rem; margin-top: 5px;">${errorMessage}</div>
+                `;
+                updateCardState(testId, 'error', resultHtml);
+                log(`❌ ${test.name} 오류: ${errorMessage}`, 'error');
+                return false;
+            }
+        }
+
+        function openInNewTab(testId) {
+            const url = buildUrl(testId);
+            if (url) {
+                window.open(url, '_blank');
+                log(`🔗 ${testId} 새 탭에서 열기`, 'info');
+            }
+        }
+
+        async function runAllTests() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                alert('V-World API 키를 먼저 입력하세요.');
+                return;
+            }
+
+            const btn = document.getElementById('runAllBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 테스트 진행 중...';
+
+            log('🚀 전체 테스트 시작', 'info');
+            log('='.repeat(50));
+
+            let successCount = 0;
+            
+            for (const test of TEST_CASES) {
+                const success = await runSingleTest(test.id);
+                if (success) successCount++;
+                
+                // 서버 부하 방지를 위한 딜레이
+                if (test !== TEST_CASES[TEST_CASES.length - 1]) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            log('='.repeat(50));
+            log(`🎯 전체 테스트 완료: ${successCount}/${TEST_CASES.length} 성공`, 
+                successCount === TEST_CASES.length ? 'success' : 'warn');
+
+            btn.disabled = false;
+            btn.textContent = '전체 테스트 실행';
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCards();
+            log('🎯 WFS 테스트 도구가 준비되었습니다.', 'info');
+        });
+    </script>
+</body>
+</html>
